@@ -24,8 +24,23 @@ character_speed = 0.6
 current_x_pos = 0
 current_y_pos = 0
 
+# 보스 캐릭터 설정
+boss = pygame.image.load("D:\\작업\\Python\\pygame_pang\\boss.png")
+boss_size = boss.get_rect().size
+boss_width = boss_size[0]
+boss_height = boss_size[1]
+boss_x_pos = screen_width / 2 - boss_width / 2
+boss_y_pos = screen_height / 2 - boss_height / 2
+
 # FPS 설정
 clock = pygame.time.Clock()
+
+# 폰트 설정
+font = pygame.font.Font(None, 40)
+
+# 최대 플레이 시간 설정
+maximum_playtime = 10
+start_playtime = pygame.time.get_ticks()
 
 # 화면 타이틀 설정
 pygame.display.set_caption("pygame_pang")
@@ -69,8 +84,30 @@ while running:
     elif character_y_pos > screen_height - character_height:
         character_y_pos = screen_height - character_height
 
+    # 데미지 기능 설정
+    character_rect = character.get_rect()
+    character_rect.left = character_x_pos
+    character_rect.top = character_y_pos
+
+    boss_rect = boss.get_rect()
+    boss_rect.left = boss_x_pos
+    boss_rect.top = boss_y_pos
+
+    # 데미지 기능 활성화
+    if character_rect.colliderect(boss_rect):
+        running = False
+
+    # 시간 제한 설정
+    playtime = (pygame.time.get_ticks() - start_playtime) / 1000
+    timer = font.render(
+        str(int(maximum_playtime - playtime)), True, (255, 255, 255))
+    if maximum_playtime - playtime <= 0:
+        running = False
+
     screen.blit(background, (0, 0))  # 배경 설정 활성화
     screen.blit(character, (character_x_pos, character_y_pos))  # 캐릭터 설정 활성화
+    screen.blit(boss, (boss_x_pos, boss_y_pos))  # 보스 캐릭터 설정 활성화
+    screen.blit(timer, (10, 10))    # 시간 제한 설정 활성화
 
     pygame.display.update()  # 변경사항 반영
 
