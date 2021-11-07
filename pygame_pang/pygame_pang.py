@@ -2,18 +2,27 @@ import pygame
 import os
 
 
-def soccer_ver():   # pang 게임의 soccer version
+def game(version):   # pang 게임 출력
     # 화면 크기 설정
     screen_width = 640
     screen_height = 480
     screen = pygame.display.set_mode((screen_width, screen_height))
 
-    # 타이틀 설정
-    pygame.display.set_caption("soccer_ver")
+    if version == 1:    # original version
+        # 타이틀 설정
+        pygame.display.set_caption("original_ver")
 
-    # 이미지 파일 경로 설정
-    current_path = os.path.dirname(__file__)
-    images_path = os.path.join(current_path, "soccer_image")
+        # 이미지 파일 경로 설정
+        current_path = os.path.dirname(__file__)
+        images_path = os.path.join(current_path, "original_image")
+
+    elif version == 2:  # soccer version
+        # 타이틀 설정
+        pygame.display.set_caption("soccer_ver")
+
+        # 이미지 파일 경로 설정
+        current_path = os.path.dirname(__file__)
+        images_path = os.path.join(current_path, "soccer_image")
 
     # 배경 설정
     background = pygame.image.load(os.path.join(images_path, "background.jpg"))
@@ -235,13 +244,12 @@ def soccer_ver():   # pang 게임의 soccer version
         pygame.display.update()  # 변경사항 반영
 
     # 최종 게임 상태 출력
-    msg = font.render(result, True, (0, 0, 255))
+    msg = font.render(result, True, (0, 0, 0))
     msg_rect = msg.get_rect(
         center=(int(screen_width / 2), int(screen_height / 2)))
     screen.blit(msg, msg_rect)
     pygame.display.update()  # 변경사항 반영
     pygame.time.delay(2000)
-
 
 def pang_version():  # pang 게임에서 version 선택하는 화면 출력
     # 화면 크기 설정
@@ -263,22 +271,22 @@ def pang_version():  # pang 게임에서 version 선택하는 화면 출력
     font = pygame.font.Font(None, 50)
 
     screen.blit(background, (0, 0))  # 배경 설정 활성화
-
     pygame.display.update()  # 변경사항 반영
 
     # version 선택창 출력
     msg = font.render("Choose the version to play : ", True, (0, 0, 255))
     msg_rect = msg.get_rect(
         center=(int(screen_width / 2), int(screen_height / 2)-50))
-    screen.blit(msg, msg_rect)
     choice = font.render("1: original, 2: soccer, 3: quit", True, (0, 0, 255))
     choice_rect = choice.get_rect(
         center=(int(screen_width / 2), int(screen_height / 2)+50))
+    
+    screen.blit(msg, msg_rect)
     screen.blit(choice, choice_rect)
     pygame.display.update()  # 변경사항 반영
 
 
-pygame.init()  # pygame 초기화
+pygame.init()  # pygame 시작
 
 pang_version()  # pang 게임에서 version 선택하는 화면 출력
 
@@ -290,11 +298,14 @@ while waiting:
             break
 
         if event.type == pygame.KEYDOWN:    # 키 눌림 이벤트 발생
-            if event.key == pygame.K_2:  # version 2를 선택한 경우
-                soccer_ver()
+            if event.key == pygame.K_1:     # version 1을 선택한 경우
+                game(1)
                 pang_version()
-            elif event.key == pygame.K_3:   # version 3를 선택한경우
+            elif event.key == pygame.K_2:   # version 2를 선택한 경우
+                game(2)
+                pang_version()
+            elif event.key == pygame.K_3:   # quit를 선택한경우
                 waiting = False
                 break
 
-pygame.quit()
+pygame.quit()   # pygame 종료
