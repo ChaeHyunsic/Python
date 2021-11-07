@@ -168,7 +168,7 @@ def game(version):   # pang 게임 출력
                 weapon_rect.top = weapon_y_pos
 
                 if weapon_rect.colliderect(boss_rect):
-                    weapon_remove = w_index  # 데미지를 입은 보스를 소멸처리하기 위해 사용
+                    weapon_remove = w_index  # 데미지를 입힌 무기를 소멸처리하기 위해 사용
                     boss_remove = b_index   # 데미지를 입은 보스를 소멸처리하기 위해 사용
 
                     if boss_index < 3:  # 보스의 최종 상태가 아니라면 실행
@@ -178,7 +178,7 @@ def game(version):   # pang 게임 출력
                         seperate_boss_width = seperate_boss_rect.size[0]
                         seperate_boss_height = seperate_boss_rect.size[1]
 
-                        # 데미지를 입은 보스는 두 개로 분열되어 좌우로 흩어지는 것을 반영하기 위해 사용
+                        # 데미지를 입은 보스는 두 개로 분열되어 좌우로 흩어지는 것을 반영
                         boss.append({
                             "current_x_pos": boss_x_pos + boss_width / 2 - seperate_boss_width / 2,
                             "current_y_pos": boss_y_pos + boss_height / 2 - seperate_boss_height / 2,
@@ -210,7 +210,7 @@ def game(version):   # pang 게임 출력
             del weapons[weapon_remove]
             weapon_remove = -1
 
-        # 보스의 최종 상태에게 데미지를 입힌 경우 활성화
+        # 보스의 최종 상태에 데미지를 입힌 경우 활성화
         if len(boss) == 0:
             result = "Mission Complete"
             running = False
@@ -290,7 +290,7 @@ pygame.init()  # pygame 시작
 
 pang_version()  # pang 게임에서 version 선택하는 화면 출력
 
-waiting = True  # 계속 시도할 수 있도록 하기 위해 사용
+waiting = True  # quit를 선택하기 전까지 계속 시도할 수 있도록 하기 위해 사용
 while waiting:
     for event in pygame.event.get():  # 사용자의 이벤트 입력 확인
         if event.type == pygame.QUIT:   # 창닫기 이벤트 발생
