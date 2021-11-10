@@ -6,20 +6,50 @@ def display_level_screen():    # 게임 난이도를 표시
 
 
 def display_game_screen():  # memory 게임 실행
-    for index, value in enumerate(answer, start=1):
-        pygame.draw.rect(screen, (50, 50, 50), value)
+    global hidden
 
-        show_cell = font.render(str(index), True, (255, 255, 255))
-        show_cell_rect = show_cell.get_rect(center =value.center)
-        screen.blit(show_cell, show_cell_rect)
+    if not hidden:
+        elapsed_time = (pygame.time.get_ticks() - start_ticks) / 1000
+        if elapsed_time > maximum_display_time:
+            hidden = True
+
+    for index, value in enumerate(answer, start=1):
+        if hidden:
+            pygame.draw.rect(screen, (50, 50, 50), value)
+        else:
+            show_cell = font.render(str(index), True, (255, 255, 255))
+            show_cell_rect = show_cell.get_rect(center =value.center)
+            screen.blit(show_cell, show_cell_rect)
 
 def check_start(pos):   # 사용자가 게임 시작을 하고자하는지 확인
-    global start
+    global start, start_ticks
 
-    if ind_level.collidepoint(pos):
+    if start:
+        check_answer(pos)
+    elif ind_level.collidepoint(pos):
         start = True
+        start_ticks = pygame.time.get_ticks()
+
+def check_answer(pos):  # 사용자가 선택한 것이 정답인지 확인
+    global hidden
+
+    for button in answer:
+        if button.collidepoint(pos):
+            if button == answer[0]:
+                del answer[0]
+                if not hidden:
+                    hidden = True
+            else:
+                pass
+            break
 
 def reflect_level(level):   # 게임 난이도에 맞는 게임 출력
+    global maximum_display_time
+
+    # 게임 난이도에 따라 cell의 최대 노출 시간 조정
+    maximum_display_time = 5 - (level // 3)
+    maximum_display_time = max(maximum_display_time, 1)
+
     total_count = (level // 3) + 5
     total_count = min(total_count, 20)
 
@@ -70,6 +100,11 @@ ind_level = pygame.Rect(0, 0, 120, 120)
 ind_level.center = (120, screen_height - 120)
 start = False   # 게임 시작 여부 확인을 위해 사용
 answer = []     # 게임의 정답을 저장해두어 사용자의 답변과 비교하기 위해 사용
+hidden = False  # cell의 노출 여부를 정하기 위해 사용
+
+# cell의 최대 노출 시간 지정
+maximum_display_time = None 
+start_ticks = None
 
 # 초기 게임 난이도 반영
 reflect_level(1)
