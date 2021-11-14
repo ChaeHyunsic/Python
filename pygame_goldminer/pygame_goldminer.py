@@ -1,12 +1,23 @@
 import pygame
 import os
+import math
 
 
 class gemstone(pygame.sprite.Sprite):   # 4가지 종류 보석의 rect 정보를 class로 관리
-    def __init__(self, image, position):
+    def __init__(self, image, position, price, weight):
         super().__init__()
         self.image = image
         self.rect = image.get_rect(center=position)
+        self.price = price
+        self.weight = weight
+
+    # 정지 상태일때, 혹은 집게에 의해 이동하는 상태일때의 보석 위치 설정
+    def set_position(self, position, angle):
+        rad_angle = math.radians(angle)
+        x_pos = self.rect.size[0] // 2 * math.cos(rad_angle)
+        y_pos = self.rect.size[0] // 2 * math.sin(rad_angle)
+
+        self.rect.center = (position[0] + x_pos, position[1] + y_pos)
 
 
 class claw(pygame.sprite.Sprite):   # 집게 rect 정보를 class로 관리
@@ -50,7 +61,7 @@ class claw(pygame.sprite.Sprite):   # 집게 rect 정보를 class로 관리
             self.original_image, -self.angle, 1)
         offset_rotated = self.offset.rotate(self.angle)
         self.rect = self.image.get_rect(center=self.position + offset_rotated)
-   
+
     def set_direction(self, direction):
         self.direction = direction
 
@@ -61,10 +72,19 @@ class claw(pygame.sprite.Sprite):   # 집게 rect 정보를 class로 관리
 
 
 def gemstone_setup():   # 4가지 종류 보석 그룹화
-    gemstone_group.add(gemstone(gemstone_images[0], (200, 380)))
-    gemstone_group.add(gemstone(gemstone_images[1], (300, 500)))
-    gemstone_group.add(gemstone(gemstone_images[2], (300, 380)))
-    gemstone_group.add(gemstone(gemstone_images[3], (900, 420)))
+    small_gold_price, small_gold_weight = 100, 5
+    big_gold_price, big_gold_weight = 300, 2
+    stone_price, stone_weight = 10, 2
+    diamond_price, diamond_weight = 600, 7
+
+    gemstone_group.add(
+        gemstone(gemstone_images[0], (200, 380), small_gold_price, small_gold_weight))
+    gemstone_group.add(
+        gemstone(gemstone_images[1], (300, 500), big_gold_price, big_gold_weight))
+    gemstone_group.add(
+        gemstone(gemstone_images[2], (300, 380), stone_price, stone_weight))
+    gemstone_group.add(
+        gemstone(gemstone_images[3], (900, 420), diamond_price, diamond_weight))
 
 
 pygame.init()   # pygame 시작
@@ -85,18 +105,19 @@ current_path = os.path.dirname(__file__)
 background = pygame.image.load(os.path.join(current_path, "background.jpg"))
 
 gemstone_images = [
-    pygame.image.load(os.path.join(current_path, "small_gold.jpg")),
-    pygame.image.load(os.path.join(current_path, "big_gold.jpg")),
-    pygame.image.load(os.path.join(current_path, "stone.jpg")),
-    pygame.image.load(os.path.join(current_path, "diamond.jpg"))
+    pygame.image.load(os.path.join(current_path, "small_gold.png")).convert_alpha(),
+    pygame.image.load(os.path.join(current_path, "big_gold.png")).convert_alpha(),
+    pygame.image.load(os.path.join(current_path, "stone.png")).convert_alpha(),
+    pygame.image.load(os.path.join(current_path, "diamond.png")).convert_alpha()
 ]
 
 # 보석 그룹 생성
 gemstone_group = pygame.sprite.Group()
 gemstone_setup()
+gemstone_caught = None
 
 # 집게 생성
-claw_image = pygame.image.load(os.path.join(current_path, "claw.jpg"))
+claw_image = pygame.image.load(os.path.join(current_path, "claw.png")).convert_alpha()
 claw_group = claw(claw_image, (screen_width // 2, 110))
 
 # 집게 이동 설정
@@ -113,8 +134,9 @@ while running:
             running = False
 
         if event.type == pygame.MOUSEBUTTONDOWN:    # 마우스 클릭 이벤트 발생시 실행
-            claw_group.set_direction(0)
-            x_pos = claw_speed
+            if claw_group.direction != 0:
+                claw_group.set_direction(0)
+                x_pos = claw_speed
 
     # 집게 이동범위 지정
     if claw_group.rect.left < 0 or claw_group.rect.right > screen_width or claw_group.rect.bottom > screen_height:
@@ -123,6 +145,22 @@ while running:
     if claw_group.offset.x < 40:
         x_pos = 0
         claw_group.init_setting()
+
+        if gemstone_caught:
+            gemstone_group.remove(gemstone_caught)
+            gemstone_caught = None
+
+    # 집게가 보석을 잡는 과정 설정
+    if not gemstone_caught:
+        for gemstone in gemstone_group:
+            if pygame.sprite.collide_mask(claw_group, gemstone):
+                gemstone_caught = gemstone
+                x_pos = -gemstone.weight
+                break
+
+    # 집게가 보석을 잡아가는 과정 설정
+    if gemstone_caught:
+        gemstone_caught.set_position(claw_group.rect.center, claw_group.angle)
 
     screen.blit(background, (0, 0))  # 게임 배경 지정
     gemstone_group.draw(screen)  # 보석 그룹 생성
