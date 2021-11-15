@@ -2,7 +2,6 @@ import pygame
 import os
 import math
 
-
 class gemstone(pygame.sprite.Sprite):   # 4가지 종류 보석의 rect 정보를 class로 관리
     def __init__(self, image, position, price, weight):
         super().__init__()
@@ -20,26 +19,24 @@ class gemstone(pygame.sprite.Sprite):   # 4가지 종류 보석의 rect 정보�
         self.rect.center = (position[0] + x_pos, position[1] + y_pos)
 
 
-class claw(pygame.sprite.Sprite):   # 집게 rect 정보를 class로 관리
+class claw(pygame.sprite.Sprite):   # 집게의 rect 정보를 class로 관리
     def __init__(self, image, position):
         super().__init__()
         self.image = image
         self.original_image = image
         self.rect = image.get_rect(center=position)
-
         self.offset = pygame.math.Vector2(40, 0)   # 집게의 pivot을 중심으로 움직이는 값
-        self.position = position  # 집게의 pivot
-
-        self.direction = -1  # 집게의 이동 방향
+        self.position = position
+        self.direction = -1  # 집게의 이동 방향 (-1: LEFT, 1:RIGHT)
         self.angle_speed = 2.5  # 집게의 좌우 이동 속도
-        self.angle = 10  # 집게의 각도
+        self.angle = 10  # pivot을 기준으로 집게의 각도
 
     def draw(self, screen):  # group이 아닌 객체에서 draw 메소드를 사용하기 위해 선언
         pygame.draw.line(screen, (0, 0, 0), self.position,
                          self.rect.center, 5)   # 집게가 움직이는 동선 표시
         screen.blit(self.image, self.rect)
 
-    def update(self, x_pos):   # 집게의 설정 반영
+    def update(self, x_pos):   # 집게의 이동 설정
         if self.direction == -1:    # 집게가 왼쪽으로 이동하고 있는 경우
             self.angle += self.angle_speed
         elif self.direction == 1:   # 집게가 오른쪽으로 이동하고 있는 경우
@@ -58,14 +55,14 @@ class claw(pygame.sprite.Sprite):   # 집게 rect 정보를 class로 관리
 
     def rotate(self):   # 각도에 따라 집게 회전
         self.image = pygame.transform.rotozoom(
-            self.original_image, -self.angle, 1)
+            self.original_image, -self.angle, 1)    # 부드러운 회전을 위해 bilt이 아닌 rotozoom 사용
         offset_rotated = self.offset.rotate(self.angle)
         self.rect = self.image.get_rect(center=self.position + offset_rotated)
 
-    def set_direction(self, direction):
+    def set_direction(self, direction): # 집게 이동 방향 지정
         self.direction = direction
 
-    def init_setting(self):
+    def init_setting(self): # 초기 설정으로 초기화
         self.offset.x = 40
         self.angle = 10
         self.direction = -1
@@ -80,23 +77,52 @@ def gemstone_setup():   # 4가지 종류 보석 그룹화
     gemstone_group.add(
         gemstone(gemstone_images[0], (200, 380), small_gold_price, small_gold_weight))
     gemstone_group.add(
+        gemstone(gemstone_images[0], (400, 400), small_gold_price, small_gold_weight))
+    gemstone_group.add(
+        gemstone(gemstone_images[0], (600, 450), small_gold_price, small_gold_weight))
+    gemstone_group.add(
+        gemstone(gemstone_images[0], (800, 400), small_gold_price, small_gold_weight))
+    gemstone_group.add(
+        gemstone(gemstone_images[0], (1150, 380), small_gold_price, small_gold_weight))
+
+    gemstone_group.add(
         gemstone(gemstone_images[1], (300, 500), big_gold_price, big_gold_weight))
+    gemstone_group.add(
+        gemstone(gemstone_images[1], (800, 500), big_gold_price, big_gold_weight))
+
     gemstone_group.add(
         gemstone(gemstone_images[2], (300, 380), stone_price, stone_weight))
     gemstone_group.add(
-        gemstone(gemstone_images[3], (900, 420), diamond_price, diamond_weight))
+        gemstone(gemstone_images[2], (700, 330), stone_price, stone_weight))
+    gemstone_group.add(
+        gemstone(gemstone_images[2], (1000, 480), stone_price, stone_weight))
 
-def score(score):
+    gemstone_group.add(
+        gemstone(gemstone_images[3], (900, 420), diamond_price, diamond_weight))
+    gemstone_group.add(
+        gemstone(gemstone_images[3], (150, 500), diamond_price, diamond_weight))
+
+def score(score):   # 실시간으로 점수 반영
     global current_score
 
     current_score += score
 
-def display_score():
+def display_score():    # 현재 점수와 목표점수 출력
     current_text = font.render(f"Current score : {current_score:,}", True, (0, 0, 0))
     screen.blit(current_text, (50, 20))
 
     goal_text = font.render(f"Goal score : {goal:,}", True, (0, 0, 0))
     screen.blit(goal_text, (50, 60))
+
+def display_time(time): # 남은 시간 출력
+    text = font.render(f"Time : {time}", True, (0, 0, 0))
+    screen.blit(text, (1100, 40))
+
+def display_result():   # 결과 출력
+    font = pygame.font.SysFont("arialrounded", 60)  # 좀 더 큰 크기로 출력하기 위해 font 재정의
+    text = font.render(result, True, (0, 0, 0))
+    text_rect = text.get_rect(center=(int(screen_width/2), int(screen_height / 2)))
+    screen.blit(text, text_rect)
 
 pygame.init()   # pygame 시작
 
@@ -111,6 +137,7 @@ pygame.display.set_caption("pygame_goldminer")
 # fps 설정
 fps = pygame.time.Clock()
 
+# 폰트 설정
 font = pygame.font.SysFont("arialrounded", 30)
 
 # 이미지 파일 경로 설정
@@ -131,7 +158,7 @@ gemstone_caught = None
 
 # 집게 생성
 claw_image = pygame.image.load(os.path.join(current_path, "claw.png")).convert_alpha()
-claw_group = claw(claw_image, (screen_width // 2, 110))
+claw_group = claw(claw_image, (screen_width // 2, 5))
 
 # 집게 이동 설정
 x_pos = 0
@@ -139,8 +166,13 @@ claw_speed = 12
 claw_return_speed = 20
 
 # 점수 기능 설정
-goal = 1500
+goal = 1000
 current_score = 0
+
+# 제한 시간 설정
+result = None
+total_time = 60
+start_time = pygame.time.get_ticks()
 
 # 게임 진행 루프
 running = True
@@ -151,7 +183,7 @@ while running:
             running = False
 
         if event.type == pygame.MOUSEBUTTONDOWN:    # 마우스 클릭 이벤트 발생시 실행
-            if claw_group.direction != 0:
+            if claw_group.direction != 0:   # 집게가 좌우 이동 상태라면 멈춤
                 claw_group.set_direction(0)
                 x_pos = claw_speed
 
@@ -159,11 +191,12 @@ while running:
     if claw_group.rect.left < 0 or claw_group.rect.right > screen_width or claw_group.rect.bottom > screen_height:
         x_pos = -claw_return_speed
 
+    # 집게가 발사되었다가 원위치로 돌아왔을때 처리 과정 설정
     if claw_group.offset.x < 40:
         x_pos = 0
         claw_group.init_setting()
 
-        if gemstone_caught:
+        if gemstone_caught: # 집게가 보석을 집어온 경우 그에 대한 점수 반영
             score(gemstone_caught.price)
             gemstone_group.remove(gemstone_caught)
             gemstone_caught = None
@@ -184,8 +217,21 @@ while running:
     gemstone_group.draw(screen)  # 보석 그룹 생성
     claw_group.update(x_pos)  # 집게 설정 반영
     claw_group.draw(screen)  # 집게 생성
-    display_score() # 현재 점수 출력
+    display_score() # 현재 점수와 목표 점수 출력
+
+    # 시간 제한 설정 활성화
+    elapsed_time = int((pygame.time.get_ticks() - start_time) / 1000)
+    display_time(total_time - elapsed_time)
+
+    if total_time - elapsed_time <= 0:
+        running = False
+        if current_score >= goal:
+            result = "Mission Complete"
+        else:
+            result = "Game Over"
+        display_result()    # 결과 출력 기능 활성화
 
     pygame.display.update()  # 변동사항 반영
 
+pygame.time.delay(2000)
 pygame.quit()   # pygame 종료
