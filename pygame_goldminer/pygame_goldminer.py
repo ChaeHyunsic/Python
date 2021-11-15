@@ -86,6 +86,17 @@ def gemstone_setup():   # 4가지 종류 보석 그룹화
     gemstone_group.add(
         gemstone(gemstone_images[3], (900, 420), diamond_price, diamond_weight))
 
+def score(score):
+    global current_score
+
+    current_score += score
+
+def display_score():
+    current_text = font.render(f"Current score : {current_score:,}", True, (0, 0, 0))
+    screen.blit(current_text, (50, 20))
+
+    goal_text = font.render(f"Goal score : {goal:,}", True, (0, 0, 0))
+    screen.blit(goal_text, (50, 60))
 
 pygame.init()   # pygame 시작
 
@@ -99,6 +110,8 @@ pygame.display.set_caption("pygame_goldminer")
 
 # fps 설정
 fps = pygame.time.Clock()
+
+font = pygame.font.SysFont("arialrounded", 30)
 
 # 이미지 파일 경로 설정
 current_path = os.path.dirname(__file__)
@@ -125,6 +138,10 @@ x_pos = 0
 claw_speed = 12
 claw_return_speed = 20
 
+# 점수 기능 설정
+goal = 1500
+current_score = 0
+
 # 게임 진행 루프
 running = True
 while running:
@@ -147,6 +164,7 @@ while running:
         claw_group.init_setting()
 
         if gemstone_caught:
+            score(gemstone_caught.price)
             gemstone_group.remove(gemstone_caught)
             gemstone_caught = None
 
@@ -166,6 +184,7 @@ while running:
     gemstone_group.draw(screen)  # 보석 그룹 생성
     claw_group.update(x_pos)  # 집게 설정 반영
     claw_group.draw(screen)  # 집게 생성
+    display_score() # 현재 점수 출력
 
     pygame.display.update()  # 변동사항 반영
 
