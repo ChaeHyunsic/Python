@@ -4,12 +4,14 @@ import random
 import math
 
 class bubble(pygame.sprite.Sprite):
-    def __init__(self, image, color, position):
+    def __init__(self, image, color, position=(0,0), row_index=-1, col_index=-1):
         super().__init__()
         self.image = image
         self.color = color
         self.rect = image.get_rect(center=position)
         self.radius = 18
+        self.row_index = row_index
+        self.col_index = col_index
 
     def set_rect(self, position):
         self.rect = self.image.get_rect(center = position)
@@ -30,6 +32,10 @@ class bubble(pygame.sprite.Sprite):
 
         if self.rect.left < 0 or self.rect.right > screen_width:
             self.set_angle(180 - self.angle)
+
+    def set_index(self, row_index, col_index):
+        self.row_index = row_index
+        self.col_index = col_index
 
 class pointer(pygame.sprite.Sprite):
     def __init__(self, image, position, angle):
@@ -77,7 +83,7 @@ def setup():
                 continue
             position = get_position(row_index, col_index)
             image = get_image(col)
-            bubble_group.add(bubble(image, col, position))
+            bubble_group.add(bubble(image, col, position, row_index, col_index))
 
 
 def get_position(row_index, col_index):
@@ -118,7 +124,7 @@ def prepare_bubbles():
 def create_bubble():
     color = get_color()
     image = get_image(color)
-    return bubble(image, color, (0, 0))
+    return bubble(image, color)
 
 def get_color():
     colors = []
@@ -136,6 +142,7 @@ def collision():
     if col_bubble or current_bubble.rect.top <= 0:
         row_index, col_index = get_index(*current_bubble.rect.center)
         place_bubble(current_bubble, row_index, col_index)
+        remove_bubbles(row_index, col_index, current_bubble.color)
         current_bubble = None
         fire = False
 
@@ -156,7 +163,59 @@ def place_bubble(current_bubble, row_index, col_index):
     map[row_index][col_index] = current_bubble.color
     position = get_position(row_index, col_index)
     current_bubble.set_rect(position)
+    current_bubble.set_index(row_index, col_index)
     bubble_group.add(current_bubble)
+
+def remove_bubbles(row_index, col_index, color):
+    visited.clear()
+    visit(row_index, col_index, color)
+    if len(visited) >= 3:
+        remove_visited()
+        remove_alone()
+
+def visit(row_index, col_index, color=None):
+    if row_index < 0 or row_index >= 11 or col_index < 0 or col_index >= 8:
+        return
+
+    if color and map[row_index][col_index] != color:
+        return
+
+    if map[row_index][col_index] in [".", "/"]:
+        return
+
+    if (row_index, col_index) in visited:
+        return
+
+    visited.append((row_index, col_index))
+
+    rows = [0, -1, -1, 0, 1, 1]
+    cols = [-1, -1, 0, 1, 0, -1]
+    if row_index % 2 == 1:
+        rows = [0, -1, -1, 0, 1, 1]
+        cols = [-1, 0, 1, 1, 1, 0]
+
+    for i in range(len(rows)):
+        visit(row_index + rows[i], col_index + cols[i], color)
+
+def remove_visited():
+    remove_bubble = [i for i in bubble_group if (i.row_index, i.col_index) in visited]
+    for j in remove_bubble:
+        map[j.row_index][j.col_index] = "."
+        bubble_group.remove(j)
+
+def remove_alone():
+    visited.clear()
+    for col_index in range(8):
+        if map[0][col_index] != ".":
+            visit(0, col_index)
+
+    remove_visited_alone()
+
+def remove_visited_alone():
+    remove_bubble = [i for i in bubble_group if (i.row_index, i.col_index) not in visited]
+    for j in remove_bubble:
+        map[j.row_index][j.col_index] = "."
+        bubble_group.remove(j)
 
 pygame.init()   # pygame 시작
 
@@ -191,6 +250,7 @@ map = []
 cell_size = 56
 bubble_width = 56
 bubble_height = 62
+visited = []
 
 # 버블 그룹 생성
 bubble_group = pygame.sprite.Group()
