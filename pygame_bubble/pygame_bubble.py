@@ -16,8 +16,11 @@ class bubble(pygame.sprite.Sprite):
     def set_rect(self, position):
         self.rect = self.image.get_rect(center = position)
 
-    def draw(self, screen):
-        screen.blit(self.image, self.rect)
+    def draw(self, screen, x_pos = None):
+        if x_pos:
+            screen.blit(self.image, (self.rect.x + x_pos, self.rect.y))
+        else:
+            screen.blit(self.image, self.rect)
 
     def set_angle(self, angle):
         self.angle = angle
@@ -36,6 +39,9 @@ class bubble(pygame.sprite.Sprite):
     def set_index(self, row_index, col_index):
         self.row_index = row_index
         self.col_index = col_index
+        
+    def drop(self, height):
+        self.rect = self.image.get_rect(center=(self.rect.centerx, self.rect.centery + height))
 
 class pointer(pygame.sprite.Sprite):
     def __init__(self, image, position, angle):
@@ -88,7 +94,7 @@ def setup():
 
 def get_position(row_index, col_index):
     x_pos = col_index * cell_size + bubble_width // 2
-    y_pos = row_index * cell_size + bubble_height // 2
+    y_pos = row_index * cell_size + bubble_height // 2 + wall_height
     if row_index % 2 == 1:
         x_pos += cell_size // 2
     
@@ -136,18 +142,19 @@ def get_color():
     return random.choice(colors)
 
 def collision():
-    global current_bubble, fire
+    global current_bubble, fire, fire_count
 
     col_bubble = pygame.sprite.spritecollideany(current_bubble, bubble_group, pygame.sprite.collide_mask)
-    if col_bubble or current_bubble.rect.top <= 0:
+    if col_bubble or current_bubble.rect.top <= wall_height:
         row_index, col_index = get_index(*current_bubble.rect.center)
         place_bubble(current_bubble, row_index, col_index)
         remove_bubbles(row_index, col_index, current_bubble.color)
         current_bubble = None
         fire = False
+        fire_count -= 1
 
 def get_index(x, y):
-    row_index = y // cell_size
+    row_index = (y - wall_height) // cell_size
     col_index = x // cell_size
 
     if row_index % 2 == 1:
@@ -217,6 +224,39 @@ def remove_visited_alone():
         map[j.row_index][j.col_index] = "."
         bubble_group.remove(j)
 
+def draw_bubbles():
+    x_pos = None
+    if fire_count == 2:
+        x_pos = random.randint(-1, 1)
+    elif fire_count == 1:
+        x_pos = random.randint(-4, 4)
+
+    for bubble in bubble_group:
+        bubble.draw(screen, x_pos)
+
+def drop_wall():
+    global wall_height, fire_count
+
+    wall_height += cell_size
+    for bubble in bubble_group:
+        bubble.drop(cell_size)
+
+    fire_count = max_fire_count
+
+def get_bottom_bubble():
+    bottom_bubbles = [bubble.rect.bottom for bubble in bubble_group]
+
+    return max(bottom_bubbles)
+
+def change_bubble(image):
+    for bubble in bubble_group:
+        bubble.image  = image
+
+def display_result():
+    text = font.render(result, True, (255, 255, 255))
+    text_rect = text.get_rect(center=(screen_width//2, screen_height//2))
+    screen.blit(text, text_rect)
+
 pygame.init()   # pygame 시작
 
 # 화면 크기 설정
@@ -264,6 +304,18 @@ current_bubble = None
 next_bubble = None
 fire = False    # 포인터에서 버블이 연사되지 않도록 하기 위해 사용
 
+# 시도 횟수 제한 설정
+max_fire_count = 7
+fire_count = max_fire_count
+wall = pygame.image.load(os.path.join(current_path, "wall.png"))
+wall_height = 0
+
+# 게임 종료 여부
+result = None
+
+# 폰트 설정
+font = pygame.font.SysFont("arialrounded", 40)
+
 setup()
 # 게임 진행 루프
 running = True
@@ -296,8 +348,18 @@ while running:
     if fire:
         collision()
 
+    if fire_count == 0:
+        drop_wall()
+
+    if not bubble_group:
+        result = "Mission Complete"
+    elif get_bottom_bubble() > len(map) * cell_size:
+        result = "Game Over"
+        change_bubble(bubble_images[-1])
+
     screen.blit(background, (0,0))  # 게임 배경 지정
-    bubble_group.draw(screen)
+    screen.blit(wall, (0,wall_height - screen_height))
+    draw_bubbles()
     pointer_group.rotate(angle_left + angle_right)
     pointer_group.draw(screen)
 
@@ -309,6 +371,11 @@ while running:
     if next_bubble:
         next_bubble.draw(screen)
 
+    if result != None:
+        display_result()
+        running = False
+
     pygame.display.update() # 변동사항 반영
 
+pygame.time.delay(2000)
 pygame.quit()   # pygame 종료
