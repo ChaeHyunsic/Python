@@ -1,7 +1,11 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
+from PIL import Image
 import tkinter.ttk
+import os
+import time
+
 
 root = Tk()     # tkinter 호출
 root.title("image_merge")   # 타이틀 설정
@@ -104,6 +108,65 @@ def start():
     if len(save_path.get()) == 0:
         messagebox.showwarning("경고", "저장 경로를 선택하세요")
         return
+
+    image_merge()
+
+def image_merge():
+    try:
+        image_width = width_combo.get()
+        if image_width == "원본유지":
+            image_width = -1
+        else:
+            image_width = int(image_width)
+
+        image_space = space_combo.get()
+        if image_space == "좁게":
+            image_space = 30
+        elif image_space == "보통":
+            image_space = 60
+        elif image_space == "넓게":
+            image_space = 90
+        else:
+            image_space = 0
+
+        image_format = format_combo.get().lower()
+
+        images = [Image.open(x) for x in list_file.get(0, END)]
+
+        image_sizes = []
+        if image_width > -1:
+            image_sizes = [(int(image_width), int(image_width * x.size[1] / x.size[0])) for x in images]
+        else:
+            image_sizes = [(x.size[0], x.size[1]) for x in images]
+
+        widths, heights = zip(*(image_sizes))
+
+        total_width, total_height = max(widths), sum(heights)
+
+        if image_space > 0:
+            total_height += (image_space * (len(images) - 1))
+
+        result = Image.new("RGB", (total_width, total_height), (255, 255, 255))
+        y_offset = 0
+
+        for index, img in enumerate(images):
+            if image_width > -1:
+                img = img.resize(image_sizes[index])
+
+            result.paste(img, (0, y_offset))
+            y_offset += (img.size[1] + image_space)
+
+            progress = (index + 1) / len(images) * 100
+            prog_var.set(progress)
+            progress_bar.update()
+
+        current_time = time.strftime("%Y%m%d_%H%M%S")
+        file_name = current_time + image_format
+        saved_path = os.path.join(save_path.get(), file_name)
+        result.save(saved_path)
+        messagebox.showinfo("알림", "작업이 완료되었습니다.")
+    except Exception as err:
+        messagebox.showerror("에러", err)
 
 # image merge 실행 기능 frame 설정
 run_frame = Frame(root)
