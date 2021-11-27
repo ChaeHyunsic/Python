@@ -10,15 +10,16 @@ import time
 root = Tk()     # tkinter 호출
 root.title("image_merge")   # 타이틀 설정
 
-# 파일 추가, 파일 삭제 기능 설정
+# 파일 추가 기능 설정
 def add_file():
-    files = filedialog.askopenfilenames(title = "이미지 파일을 선택하세요", filetypes = (("PNG 파일", "*.png"), ("모든 파일", "*.*")), initialdir = r"D:\작업\Python\tkinter_image_merge")
+    files = filedialog.askopenfilenames(title = "이미지 파일을 선택하세요", filetypes = (("PNG 파일", "*.png"), ("JPG 파일", "*.jpg"), ("모든 파일", "*.*")), initialdir = r"D:\작업\Python")
 
     for file in files:
         list_file.insert(END, file)
 
+# 파일 삭제 기능 설정
 def del_file():
-    for index in reversed(list_file.curselection()):
+    for index in reversed(list_file.curselection()):    # 이전의 삭제로 인해 영향을 받는 경우의 수를 없애기 위해 역순으로 진행
         list_file.delete(index)
 
 # 파일 추가, 파일 삭제 기능 frame 설정
@@ -45,7 +46,7 @@ scrollbar.config(command = list_file.yview)
 # 저장 경로 선택 기능 설정
 def browse_path():
     selected = filedialog.askdirectory()
-    if selected == '':
+    if selected == '':  # 2회차 이상의 시도를 할때 이전의 시도를 보존하기 위해 None이 아닌 ''를 사용
         return
     save_path.delete(0, END)
     save_path.insert(0, selected)
@@ -86,7 +87,7 @@ space_combo.pack(side = "left", padx = 5, pady = 5)
 format_label = Label(option_frame, text = "포맷", width = 8)
 format_label.pack(side = "left", padx = 5, pady = 5)
 
-format_option = [".PNG", ".JPG", ".BMP"]
+format_option = [".PNG", ".JPG"]
 format_combo = tkinter.ttk.Combobox(option_frame, state = "readonly", values = format_option, width = 10)
 format_combo.current(0)
 format_combo.pack(side = "left", padx = 5, pady = 5)
@@ -99,20 +100,22 @@ prog_var = DoubleVar()
 progress_bar = tkinter.ttk.Progressbar(progress_frame, maximum = 100, variable = prog_var)
 progress_bar.pack(fill = "x", padx = 5, pady = 5)
 
-# image merge 실행 기능 설정
+# image merge 실행 전 사용자가 놓친 옵션이 없는지 확인
 def start():
     if list_file.size() == 0:   # 선택된 이미지가 없을 경우
         messagebox.showwarning("경고", "이미지 파일을 추가하세요")
         return
 
-    if len(save_path.get()) == 0:
+    if len(save_path.get()) == 0:   # 저장 경로를 지정하지 않았을 경우
         messagebox.showwarning("경고", "저장 경로를 선택하세요")
         return
 
     image_merge()
 
+# image merge 실행 기능 설정
 def image_merge():
     try:
+        # 사용자가 지정한 옵션 불러오기
         image_width = width_combo.get()
         if image_width == "원본유지":
             image_width = -1
@@ -133,6 +136,7 @@ def image_merge():
 
         images = [Image.open(x) for x in list_file.get(0, END)]
 
+        # 이미지를 합칠 틀 생성
         image_sizes = []
         if image_width > -1:
             image_sizes = [(int(image_width), int(image_width * x.size[1] / x.size[0])) for x in images]
@@ -147,6 +151,8 @@ def image_merge():
             total_height += (image_space * (len(images) - 1))
 
         result = Image.new("RGB", (total_width, total_height), (255, 255, 255))
+
+        # 사용자가 지정한 세로 간격 지정 옵션 반영
         y_offset = 0
 
         for index, img in enumerate(images):
@@ -156,16 +162,18 @@ def image_merge():
             result.paste(img, (0, y_offset))
             y_offset += (img.size[1] + image_space)
 
+            # progress bar가 실질적인 작업의 수치를 반영하도록 설정
             progress = (index + 1) / len(images) * 100
             prog_var.set(progress)
             progress_bar.update()
 
+        # 임의의 파일 이름 생성
         current_time = time.strftime("%Y%m%d_%H%M%S")
         file_name = current_time + image_format
         saved_path = os.path.join(save_path.get(), file_name)
         result.save(saved_path)
         messagebox.showinfo("알림", "작업이 완료되었습니다.")
-    except Exception as err:
+    except Exception as err:    # 지정한 예외 사항 외의 에러는 시스템에러 처리
         messagebox.showerror("에러", err)
 
 # image merge 실행 기능 frame 설정
